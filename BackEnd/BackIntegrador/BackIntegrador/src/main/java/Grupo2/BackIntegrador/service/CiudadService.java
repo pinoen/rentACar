@@ -1,5 +1,6 @@
 package Grupo2.BackIntegrador.service;
 
+import Grupo2.BackIntegrador.DTO.CiudadDTO;
 import Grupo2.BackIntegrador.Exception.ResourceNotFoundException;
 import Grupo2.BackIntegrador.model.Ciudad;
 import Grupo2.BackIntegrador.repository.CiudadRepository;
@@ -7,6 +8,7 @@ import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,25 +23,33 @@ public class CiudadService {
         this.ciudadRepository = ciudadRepository;
     }
 
-    public List<Ciudad> listarCiudad() {
+    public List<CiudadDTO> listarCiudad() {
         LOGGER.info("Se inició el listado de todas las ciudad");
-        return ciudadRepository.findAll();
+        List<Ciudad>ciudadesEncontradas=ciudadRepository.findAll();
+        List<CiudadDTO> respuesta= new ArrayList<>();
+        for (Ciudad c:ciudadesEncontradas){
+            respuesta.add(ciudadACiudadDTO(c));
+        }
+        return respuesta;
     }
 
-    public Ciudad guardarCiudad(Ciudad ciudad){
+    public CiudadDTO guardarCiudad(CiudadDTO ciudad){
         LOGGER.info("Se inició una operación de guardado de la ciudad con id=: "+
                 ciudad.getId());
-        return ciudadRepository.save(ciudad);
+        Ciudad ciudadAGuardar=ciudadDTOaCiudad(ciudad);
+        Ciudad ciudadGuardada=ciudadRepository.save(ciudadAGuardar);
+        return ciudadACiudadDTO(ciudadGuardada);
     }
 
-    public void actualizarCiudad(Ciudad ciudad){
+    public void actualizarCiudad(CiudadDTO ciudad){
         LOGGER.info("Se inició una operación de actualización de la ciudad con id="+
                 ciudad.getId());
-        ciudadRepository.save(ciudad);
+        Ciudad ciudadAActualizar=ciudadDTOaCiudad(ciudad);
+        ciudadRepository.save(ciudadAActualizar);
     }
 
     public void eliminarCiudad(Long id) throws ResourceNotFoundException {
-        Optional<Ciudad> CiudadAEliminar=buscarCiudadXId(id);
+        Optional<CiudadDTO> CiudadAEliminar=buscarCiudadXId(id);
         if (CiudadAEliminar.isPresent()){
             ciudadRepository.deleteById(id);
             LOGGER.warn("Se realizo una operación de eliminación de la ciudad con" +
@@ -52,8 +62,30 @@ public class CiudadService {
 
     }
 
-    public Optional<Ciudad> buscarCiudadXId(Long id){
+    public Optional<CiudadDTO> buscarCiudadXId(Long id){
         LOGGER.info("Se inició una operación de búsqueda de la ciudad con id="+id);
-        return ciudadRepository.findById(id);
+        Optional<Ciudad> ciudadBuscada=ciudadRepository.findById(id);
+        if (ciudadBuscada.isPresent()){
+            return Optional.of(ciudadACiudadDTO(ciudadBuscada.get()));
+        }
+        else {
+            return Optional.empty();
+        }
+    }
+
+    private CiudadDTO ciudadACiudadDTO(Ciudad ciudad){
+        CiudadDTO respuesta = new CiudadDTO();
+        respuesta.setId(ciudad.getId());
+        respuesta.setNombre(ciudad.getNombre());
+        respuesta.setPais(ciudad.getPais());
+        return respuesta;
+    }
+
+    private Ciudad ciudadDTOaCiudad(CiudadDTO ciudadDTO){
+        Ciudad ciudad= new Ciudad();
+        ciudad.setId(ciudadDTO.getId());
+        ciudad.setNombre(ciudadDTO.getNombre());
+        ciudad.setPais(ciudadDTO.getPais());
+        return ciudad;
     }
 }

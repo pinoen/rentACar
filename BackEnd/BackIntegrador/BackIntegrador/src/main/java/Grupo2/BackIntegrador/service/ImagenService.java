@@ -1,5 +1,6 @@
 package Grupo2.BackIntegrador.service;
 
+import Grupo2.BackIntegrador.DTO.ImagenDTO;
 import Grupo2.BackIntegrador.Exception.ResourceNotFoundException;
 import Grupo2.BackIntegrador.model.Categoria;
 import Grupo2.BackIntegrador.model.Imagen;
@@ -9,6 +10,7 @@ import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,25 +25,33 @@ public class ImagenService {
         this.imagenRepository = imagenRepository;
     }
 
-    public List<Imagen> listarimagenes() {
+    public List<ImagenDTO> listarimagenes() {
         LOGGER.info("Se inició el listado de todas las imagenes");
-        return imagenRepository.findAll();
+        List<Imagen> imagenesEncontradas=imagenRepository.findAll();
+        List<ImagenDTO> respuesta= new ArrayList<>();
+        for (Imagen i:imagenesEncontradas){
+            respuesta.add(imagenAImagenDTO(i));
+        }
+        return respuesta;
     }
 
-    public Imagen guardarImagen(Imagen imagen){
+    public ImagenDTO guardarImagen(ImagenDTO imagen){
         LOGGER.info("Se inició una operación de guardado de la imagen con titulo: "+
                 imagen.getTitulo());
-        return imagenRepository.save(imagen);
+        Imagen imagenAGuardar=imagenDTOaImagen(imagen);
+        Imagen imagenGuardada=imagenRepository.save(imagenAGuardar);
+        return imagenAImagenDTO(imagenGuardada);
     }
 
-    public void actualizarImagen(Imagen imagen){
+    public void actualizarImagen(ImagenDTO imagen){
         LOGGER.info("Se inició una operación de actualización de la imagen con id="+
                 imagen.getId());
-        imagenRepository.save(imagen);
+        Imagen imagenAActualizar=imagenDTOaImagen(imagen);
+        imagenRepository.save(imagenAActualizar);
     }
 
     public void eliminarImagen(Long id) throws ResourceNotFoundException {
-        Optional<Imagen> imagenAEliminar=buscarImagenXId(id);
+        Optional<ImagenDTO> imagenAEliminar=buscarImagenXId(id);
         if (imagenAEliminar.isPresent()){
             imagenRepository.deleteById(id);
             LOGGER.warn("Se realizo una operación de eliminación de la imagen con" +
@@ -54,8 +64,30 @@ public class ImagenService {
 
     }
 
-    public Optional<Imagen> buscarImagenXId(Long id){
+    public Optional<ImagenDTO> buscarImagenXId(Long id){
         LOGGER.info("Se inició una operación de búsqueda de la imagen con id="+id);
-        return imagenRepository.findById(id);
+        Optional<Imagen> imagenBuscada=imagenRepository.findById(id);
+        if (imagenBuscada.isPresent()){
+            return Optional.of(imagenAImagenDTO(imagenBuscada.get()));
+        }
+        else {
+            return Optional.empty();
+        }
+    }
+
+    private ImagenDTO imagenAImagenDTO(Imagen imagen){
+        ImagenDTO respuesta= new ImagenDTO();
+        respuesta.setId(imagen.getId());
+        respuesta.setTitulo(imagen.getTitulo());
+        respuesta.setUrl_img(imagen.getUrl_img());
+        return respuesta;
+    }
+
+    private Imagen imagenDTOaImagen(ImagenDTO imagenDTO){
+        Imagen imagen = new Imagen();
+        imagen.setId(imagenDTO.getId());
+        imagen.setTitulo(imagenDTO.getTitulo());
+        imagen.setUrl_img(imagenDTO.getUrl_img());
+        return imagen;
     }
 }
